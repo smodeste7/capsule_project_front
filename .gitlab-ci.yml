@@ -56,7 +56,3 @@ destroy_infrastructure:
   when: manual # Déclenché manuellement!
   only:
     - main
-  # Ajoutez des protections supplémentaires si nécessaire
-  environment:
-    name: production
-    action: stop
