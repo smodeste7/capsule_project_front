@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "frontend_bucket" {
-  bucket = "front_bucket_morning_news"
+  bucket = "frontbucketmorningnews"
   
   tags = {
     Name        = "Frontend Deployment Bucket"
