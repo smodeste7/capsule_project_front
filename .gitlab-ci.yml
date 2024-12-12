@@ -1,0 +1,62 @@
+stages:
+  - build
+  - test
+  - deploy
+  - destroy
+
+variables:
+  NODE_VERSION: 18-alpine3.20
+  AWS_DEFAULT_REGION: eu-west-3 # Adaptez selon votre région
+  TERRAFORM_VERSION: 1.10.1
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .next/cache/
+
+build:
+  stage: build
+  image: node:${NODE_VERSION}
+  script:
+    - npm ci
+    - npm run build
+    - npm run export
+  artifacts:
+    paths:
+      - out/
+    expire_in: 1 week
+
+deploy_s3_cloudfront:
+  stage: deploy
+  image:
+    name: hashicorp/terraform:${TERRAFORM_VERSION}
+    entrypoint: [""]
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+
+    - export CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+    #- echo "Distribution ID: $CLOUDFRONT_DISTRIBUTION_ID"
+    - apk add aws-cli
+    - aws s3 sync out/ s3://${S3_BUCKET_NAME} --delete
+    #- aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
+  only:
+    - main # Déploiement uniquement sur la branche mainnnn
+
+destroy_infrastructure:
+  stage: destroy
+  image:
+    name: hashicorp/terraform:${TERRAFORM_VERSION}
+    entrypoint: [""]
+  script:
+    - terraform init
+    - terraform plan
+    - terraform destroy -auto-approve
+  when: manual # Déclenché manuellement!
+  only:
+    - main
+  # Ajoutez des protections supplémentaires si nécessaire
+  environment:
+    name: production
+    action: stop
