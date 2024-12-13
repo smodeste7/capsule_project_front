@@ -26,7 +26,7 @@ function Header() {
   }, []);
 
   const handleRegister = () => {
-    fetch("http://api.smo4.cloud:3000/users/signup", {
+    fetch("http://34.163.223.67:3000/users/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -46,7 +46,7 @@ function Header() {
   };
 
   const handleConnection = () => {
-    fetch("http://api.smo4.cloud:3000/users/signin", {
+    fetch("http://34.163.223.67:3000/users/signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
