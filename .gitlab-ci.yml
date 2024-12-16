@@ -6,21 +6,32 @@ stages:
 
 variables:
   NODE_VERSION: 18-alpine3.20
-  AWS_DEFAULT_REGION: eu-west-3 # Adaptez selon votre région
+  AWS_DEFAULT_REGION: eu-west-3
   TERRAFORM_VERSION: 1.10.1
+  TF_STATE_NAME: "state-tf"
+  TF_STATE_ADDRESS: "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}"
+  TF_BACKEND_CONFIG: |
+    -backend-config="address=${TF_STATE_ADDRESS}" \
+    -backend-config="lock_address=${TF_STATE_ADDRESS}/lock" \
+    -backend-config="unlock_address=${TF_STATE_ADDRESS}/lock" \
+    -backend-config="username=${GITLAB_USER_LOGIN}" \
+    -backend-config="password=${GITLAB_ACCESS_TOKEN}" \
+    -backend-config="lock_method=POST" \
+    -backend-config="unlock_method=DELETE" \
+    -backend-config="retry_wait_min=5"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - node_modules/
     - .next/cache/
+    - .terraform/ # Ajout pour Terraform
 
 build:
   stage: build
   image: node:${NODE_VERSION}
   script:
     - npm ci
-    - npm run build
     - npm run export
   artifacts:
     paths:
@@ -33,16 +44,20 @@ deploy_s3_cloudfront:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
   script:
-    - terraform init
-    - terraform apply -auto-approve
-
+    - terraform init ${TF_BACKEND_CONFIG}
+    - terraform validate
+    - terraform plan -out=tfplan
+    - terraform apply -auto-approve tfplan
     - export CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-    #- echo "Distribution ID: $CLOUDFRONT_DISTRIBUTION_ID"
     - apk add aws-cli
     - aws s3 sync out/ s3://${S3_BUCKET_NAME} --delete
     #- aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
+  artifacts:
+    paths:
+      - tfplan
+    expire_in: 1 week
   only:
-    - main # Déploiement uniquement sur la branche mainnnn
+    - main # Déploiement uniquement sur la branche main
 
 destroy_infrastructure:
   stage: destroy
@@ -50,9 +65,10 @@ destroy_infrastructure:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
   script:
-    - terraform init
-    - terraform plan
-    - terraform destroy -auto-approve
-  when: manual # Déclenché manuellement!
+    - terraform init ${TF_BACKEND_CONFIG}
+    - terraform validate
+    - terraform plan -destroy -out=destroy-plan
+    - terraform apply -auto-approve destroy-plan
+  when: manual # Déclenché manuellement
   only:
     - main

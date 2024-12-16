@@ -1,7 +1,72 @@
 provider "aws" {
-  region = "eu-west-3"  # Adaptez selon votre région
+  region = "eu-west-3"
 }
 
+# Variables pour les domaines et certificats
+variable "domain_name" {
+  description = "Domaine principal"
+  type        = string
+  default     = "smo4.cloud"
+}
+
+variable "front_subdomain" {
+  description = "Sous-domaine pour le frontend"
+  type        = string
+  default     = "front"
+}
+
+variable "api_subdomain" {
+  description = "Sous-domaine pour l'API"
+  type        = string
+  default     = "api"
+}
+
+# Récupération de la zone Route53 existante
+data "aws_route53_zone" "main" {
+  name = var.domain_name
+}
+
+# Certificat ACM pour les sous-domaines
+resource "aws_acm_certificate" "frontend_cert" {
+  domain_name       = "${var.front_subdomain}.${var.domain_name}"
+  validation_method = "DNS"
+
+  subject_alternative_names = ["${var.api_subdomain}.${var.domain_name}"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name = "Frontend Certificate"
+  }
+}
+
+# Validation DNS du certificat
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.frontend_cert.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = data.aws_route53_zone.main.zone_id
+}
+
+# Validation du certificat
+resource "aws_acm_certificate_validation" "frontend" {
+  certificate_arn         = aws_acm_certificate.frontend_cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+}
+
+# Bucket S3 (configuration précédente conservée)
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "frontbucketmorningnews"
   
@@ -11,7 +76,7 @@ resource "aws_s3_bucket" "frontend_bucket" {
   }
 }
 
-# Activation de l'hébergement de site statique S3
+# Configuration de l'hébergement de site statique S3 (inchangé)
 resource "aws_s3_bucket_website_configuration" "static_website" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -20,11 +85,11 @@ resource "aws_s3_bucket_website_configuration" "static_website" {
   }
 
   error_document {
-    key = "404.html"  # Assurez-vous d'avoir un fichier 404.html dans votre export Next.js
+    key = "404.html"
   }
 }
 
-# Configuration de la politique de bucket pour l'hébergement web
+# Configuration d'accès public (inchangé)
 resource "aws_s3_bucket_public_access_block" "frontend_bucket_access" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -34,7 +99,7 @@ resource "aws_s3_bucket_public_access_block" "frontend_bucket_access" {
   restrict_public_buckets = false
 }
 
-# Politique de bucket pour autoriser l'accès public en lecture
+# Politique de bucket (inchangé)
 resource "aws_s3_bucket_policy" "allow_public_read" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -54,7 +119,7 @@ resource "aws_s3_bucket_policy" "allow_public_read" {
   depends_on = [aws_s3_bucket_public_access_block.frontend_bucket_access]
 }
 
-# Configuration de la distribution CloudFront reste identique
+# Distribution CloudFront avec support HTTPS et domaine personnalisé
 resource "aws_cloudfront_distribution" "frontend_distribution" {
   origin {
     domain_name = aws_s3_bucket_website_configuration.static_website.website_endpoint
@@ -71,6 +136,8 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
+
+  aliases = ["${var.front_subdomain}.${var.domain_name}"]
 
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
@@ -99,11 +166,26 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate.frontend_cert.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 }
 
-# Outputs utiles pour vérification
+# Enregistrements Route53 pour CloudFront
+resource "aws_route53_record" "frontend" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${var.front_subdomain}.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend_distribution.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend_distribution.hosted_zone_id
+    evaluate_target_health = true
+  }
+}
+
+# Outputs utiles
 output "s3_website_endpoint" {
   value = aws_s3_bucket_website_configuration.static_website.website_endpoint
 }
@@ -114,4 +196,8 @@ output "cloudfront_domain_name" {
 
 output "cloudfront_distribution_id" {
   value = aws_cloudfront_distribution.frontend_distribution.id
+}
+
+output "frontend_url" {
+  value = "https://${var.front_subdomain}.${var.domain_name}"
 }
