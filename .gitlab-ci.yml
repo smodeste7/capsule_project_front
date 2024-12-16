@@ -10,15 +10,6 @@ variables:
   TERRAFORM_VERSION: 1.10.1
   TF_STATE_NAME: "state-tf"
   TF_STATE_ADDRESS: "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}"
-  TF_BACKEND_CONFIG: |
-    -backend-config="address=${TF_STATE_ADDRESS}" \
-    -backend-config="lock_address=${TF_STATE_ADDRESS}/lock" \
-    -backend-config="unlock_address=${TF_STATE_ADDRESS}/lock" \
-    -backend-config="username=${GITLAB_USER_LOGIN}" \
-    -backend-config="password=${GITLAB_ACCESS_TOKEN}" \
-    -backend-config="lock_method=POST" \
-    -backend-config="unlock_method=DELETE" \
-    -backend-config="retry_wait_min=5"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
