@@ -41,10 +41,10 @@ variable "api_subdomain" {
   default     = "api"
 }
 
-variable "ARN_ACM" {
+variable "arn_acm" {
   description = "ARN du certificat ACM existant"
   type        = string
-  default     = "arn:aws:acm:us-east-1:463470970455:certificate/46b96f00-7a96-470e-8cb4-d74961b0e03c"  # Valeur en dur de l'ARN du certificat ACM
+  default     = "arn:aws:acm:us-east-1:463470970455:certificate/44e367b1-87c1-43b1-9eb8-5b897ec85c79"  # Valeur en dur de l'ARN du certificat ACM
 }
 
 # Récupération de la zone Route53 existante
@@ -55,9 +55,7 @@ data "aws_route53_zone" "main" {
 # Utilisation du certificat ACM existant pour le frontend (via la valeur en dur de l'ARN)
 data "aws_acm_certificate" "frontend_cert" {
   provider        = aws.us_east_1
-  domain = var.domain_name
-  most_recent = true
-  statuses = ["ISSUED"]
+  arn = var.arn_acm
 }
 
 # Bucket S3
