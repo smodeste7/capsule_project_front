@@ -55,7 +55,9 @@ data "aws_route53_zone" "main" {
 # Utilisation du certificat ACM existant pour le frontend (via la valeur en dur de l'ARN)
 data "aws_acm_certificate" "frontend_cert" {
   provider        = aws.us_east_1
-  arn = var.ARN_ACM
+  domain = var.domain_name
+  most_recent = true
+  statuses = ["ISSUED"]
 }
 
 # Bucket S3
