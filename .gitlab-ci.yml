@@ -44,7 +44,15 @@ deploy_s3_cloudfront:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
   script:
-    - terraform init ${TF_BACKEND_CONFIG}
+    - terraform init \
+      -backend-config="address=${TF_STATE_ADDRESS}" \
+      -backend-config="lock_address=${TF_STATE_ADDRESS}/lock" \
+      -backend-config="unlock_address=${TF_STATE_ADDRESS}/lock" \
+      -backend-config="username=${GITLAB_USER_LOGIN}" \
+      -backend-config="password=${GITLAB_ACCESS_TOKEN}" \
+      -backend-config="lock_method=POST" \
+      -backend-config="unlock_method=DELETE" \
+      -backend-config="retry_wait_min=5"
     - terraform validate
     - terraform plan -out=tfplan
     - terraform apply -auto-approve tfplan
@@ -65,7 +73,15 @@ destroy_infrastructure:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
   script:
-    - terraform init ${TF_BACKEND_CONFIG}
+    - terraform init \
+      -backend-config="address=${TF_STATE_ADDRESS}" \
+      -backend-config="lock_address=${TF_STATE_ADDRESS}/lock" \
+      -backend-config="unlock_address=${TF_STATE_ADDRESS}/lock" \
+      -backend-config="username=${GITLAB_USER_LOGIN}" \
+      -backend-config="password=${GITLAB_ACCESS_TOKEN}" \
+      -backend-config="lock_method=POST" \
+      -backend-config="unlock_method=DELETE" \
+      -backend-config="retry_wait_min=5"
     - terraform validate
     - terraform plan -destroy -out=destroy-plan
     - terraform apply -auto-approve destroy-plan
