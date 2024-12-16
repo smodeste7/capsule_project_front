@@ -1,3 +1,16 @@
+terraform {
+  backend "http" {
+    address         = "${env.TF_STATE_ADDRESS}"
+    lock_address    = "${env.TF_STATE_ADDRESS}/lock"
+    unlock_address  = "${env.TF_STATE_ADDRESS}/lock"
+    lock_method     = "POST"
+    unlock_method   = "DELETE"
+    username        = "${env.GITLAB_USER_LOGIN}"
+    password        = "${env.GITLAB_ACCESS_TOKEN}"
+    retry_wait_min  = 5
+  }
+}
+
 # Provider AWS pour les autres ressources (en Europe)
 provider "aws" {
   region = "eu-west-3"
@@ -72,6 +85,19 @@ resource "aws_route53_record" "cert_validation" {
 resource "aws_acm_certificate_validation" "frontend" {
   certificate_arn         = aws_acm_certificate.frontend_cert.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+
+  timeouts {
+    create = "1h"  # Attendre jusqu'à 1 heure pour la validation du certificat
+  }
+}
+
+# Pause explicite après la validation du certificat pour la propagation DNS
+resource "null_resource" "wait_for_dns_propagation" {
+  provisioner "local-exec" {
+    command = "sleep 60"  # Pause de 60 secondes pour permettre la propagation DNS
+  }
+
+  depends_on = [aws_acm_certificate_validation.frontend]
 }
 
 # Bucket S3
@@ -209,3 +235,4 @@ output "cloudfront_distribution_id" {
 output "frontend_url" {
   value = "https://${var.front_subdomain}.${var.domain_name}"
 }
+
