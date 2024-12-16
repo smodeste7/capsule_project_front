@@ -1,5 +1,12 @@
+# Provider AWS pour les autres ressources (en Europe)
 provider "aws" {
   region = "eu-west-3"
+}
+
+# Provider AWS pour ACM dans la région us-east-1 pour le certificat CloudFront
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
 }
 
 # Variables pour les domaines et certificats
@@ -26,8 +33,9 @@ data "aws_route53_zone" "main" {
   name = var.domain_name
 }
 
-# Certificat ACM pour les sous-domaines
+# Certificat ACM pour les sous-domaines (avec la région us-east-1)
 resource "aws_acm_certificate" "frontend_cert" {
+  provider          = aws.us_east_1
   domain_name       = "${var.front_subdomain}.${var.domain_name}"
   validation_method = "DNS"
 
@@ -66,7 +74,7 @@ resource "aws_acm_certificate_validation" "frontend" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# Bucket S3 (configuration précédente conservée)
+# Bucket S3
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "frontbucketmorningnews"
   
@@ -76,7 +84,7 @@ resource "aws_s3_bucket" "frontend_bucket" {
   }
 }
 
-# Configuration de l'hébergement de site statique S3 (inchangé)
+# Configuration de l'hébergement de site statique S3
 resource "aws_s3_bucket_website_configuration" "static_website" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -89,7 +97,7 @@ resource "aws_s3_bucket_website_configuration" "static_website" {
   }
 }
 
-# Configuration d'accès public (inchangé)
+# Configuration d'accès public pour le bucket S3
 resource "aws_s3_bucket_public_access_block" "frontend_bucket_access" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -99,7 +107,7 @@ resource "aws_s3_bucket_public_access_block" "frontend_bucket_access" {
   restrict_public_buckets = false
 }
 
-# Politique de bucket (inchangé)
+# Politique de bucket pour autoriser la lecture publique
 resource "aws_s3_bucket_policy" "allow_public_read" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
