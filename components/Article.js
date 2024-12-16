@@ -15,7 +15,7 @@ function Article(props) {
       return;
     }
 
-    fetch(`http://13.36.166.55:3000/users/canBookmark/${user.token}`)
+    fetch(`http://15.237.130.157:3000/users/canBookmark/${user.token}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.result && data.canBookmark) {

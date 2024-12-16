@@ -41,63 +41,21 @@ variable "api_subdomain" {
   default     = "api"
 }
 
+variable "ARN_ACM" {
+  description = "ARN du certificat ACM existant"
+  type        = string
+  default     = "arn:aws:acm:us-east-1:463470970455:certificate/46b96f00-7a96-470e-8cb4-d74961b0e03c"  # Valeur en dur de l'ARN du certificat ACM
+}
+
 # Récupération de la zone Route53 existante
 data "aws_route53_zone" "main" {
   name = var.domain_name
 }
 
-# Certificat ACM pour les sous-domaines (avec la région us-east-1)
-resource "aws_acm_certificate" "frontend_cert" {
-  provider          = aws.us_east_1
-  domain_name       = "${var.front_subdomain}.${var.domain_name}"
-  validation_method = "DNS"
-
-  subject_alternative_names = ["${var.api_subdomain}.${var.domain_name}"]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = {
-    Name = "Frontend Certificate"
-  }
-}
-
-# Validation DNS du certificat
-resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.frontend_cert.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = data.aws_route53_zone.main.zone_id
-}
-
-# Validation du certificat
-resource "aws_acm_certificate_validation" "frontend" {
-  certificate_arn         = aws_acm_certificate.frontend_cert.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
-
-  timeouts {
-    create = "1h"  # Attendre jusqu'à 1 heure pour la validation du certificat
-  }
-}
-
-# Pause explicite après la validation du certificat pour la propagation DNS
-resource "null_resource" "wait_for_dns_propagation" {
-  provisioner "local-exec" {
-    command = "sleep 60"  # Pause de 60 secondes pour permettre la propagation DNS
-  }
-
-  depends_on = [aws_acm_certificate_validation.frontend]
+# Utilisation du certificat ACM existant pour le frontend (via la valeur en dur de l'ARN)
+data "aws_acm_certificate" "frontend_cert" {
+  provider        = aws.us_east_1
+  arn = var.ARN_ACM
 }
 
 # Bucket S3
@@ -200,13 +158,13 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.frontend_cert.arn
+    acm_certificate_arn      = data.aws_acm_certificate.frontend_cert.arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 }
 
-# Enregistrements Route53 pour CloudFront
+# Enregistrements Route53 pour CloudFront (front.smo4.cloud)
 resource "aws_route53_record" "frontend" {
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "${var.front_subdomain}.${var.domain_name}"
@@ -217,6 +175,16 @@ resource "aws_route53_record" "frontend" {
     zone_id                = aws_cloudfront_distribution.frontend_distribution.hosted_zone_id
     evaluate_target_health = true
   }
+}
+
+# Enregistrement Route53 pour l'API (api.smo4.cloud) pointant vers l'IP EC2
+resource "aws_route53_record" "api" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${var.api_subdomain}.${var.domain_name}"
+  type    = "A"
+  
+  ttl     = 300
+  records = ["15.237.130.157"]
 }
 
 # Outputs utiles
@@ -235,4 +203,3 @@ output "cloudfront_distribution_id" {
 output "frontend_url" {
   value = "https://${var.front_subdomain}.${var.domain_name}"
 }
-
