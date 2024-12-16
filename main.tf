@@ -52,12 +52,6 @@ data "aws_route53_zone" "main" {
   name = var.domain_name
 }
 
-# Utilisation du certificat ACM existant pour le frontend (via la valeur en dur de l'ARN)
-data "aws_acm_certificate" "frontend_cert" {
-  provider        = aws.us_east_1
-  arn = var.arn_acm
-}
-
 # Bucket S3
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "frontbucketmorningnews"
@@ -158,7 +152,7 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = data.aws_acm_certificate.frontend_cert.arn
+    acm_certificate_arn      = var.arn_acm  # Utilisation directe de l'ARN du certificat
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
