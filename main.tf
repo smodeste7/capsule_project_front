@@ -106,7 +106,7 @@ resource "aws_s3_bucket_policy" "allow_public_read" {
   depends_on = [aws_s3_bucket_public_access_block.frontend_bucket_access]
 }
 
-# Distribution CloudFront avec support HTTPS et domaine personnalisé
+# Distribution CloudFront avec support HTTPS et domaine personnalisé (quelques détails à régler pour affiner les paramétrages)
 resource "aws_cloudfront_distribution" "frontend_distribution" {
   origin {
     domain_name = aws_s3_bucket_website_configuration.static_website.website_endpoint
