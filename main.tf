@@ -55,6 +55,7 @@ data "aws_route53_zone" "main" {
 # Bucket S3
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "frontbucketmorningnews"
+  force_destroy = true
   
   tags = {
     Name        = "Frontend Deployment Bucket"
@@ -178,7 +179,7 @@ resource "aws_route53_record" "api" {
   type    = "A"
   
   ttl     = 300
-  records = ["13.38.230.146"]
+  records = ["15.237.52.149"]
 }
 
 # Outputs utiles

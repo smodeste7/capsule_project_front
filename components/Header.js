@@ -26,7 +26,7 @@ function Header() {
   }, []);
 
   const handleRegister = () => {
-    fetch("http://13.38.230.146:3000/users/signup", {
+    fetch("http://15.237.52.149:3000/users/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -46,7 +46,7 @@ function Header() {
   };
 
   const handleConnection = () => {
-    fetch("http://13.38.230.146:3000/users/signin", {
+    fetch("http://15.237.52.149:3000/users/signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
