@@ -179,7 +179,7 @@ resource "aws_route53_record" "api" {
   type    = "A"
   
   ttl     = 300
-  records = ["15.237.52.149"]
+  records = ["13.36.222.192"]
 }
 
 # Outputs utiles

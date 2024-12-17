@@ -13,7 +13,7 @@ function TopArticle(props) {
       return;
     }
 
-    fetch(`http://15.237.52.149:3000/users/canBookmark/${user.token}`)
+    fetch(`http://13.36.222.192:3000/users/canBookmark/${user.token}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.result && data.canBookmark) {
