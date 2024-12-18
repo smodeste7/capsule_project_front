@@ -43,8 +43,9 @@ deploy_s3_cloudfront:
     - terraform plan -out=tfplan
     - terraform apply -auto-approve tfplan
     - export CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-    - apt-get update -y
-    - apt-get install -y awscli
+    - apk add aws-cli
+    #- apt-get update -y
+    #- apt-get install -y awscli
     - aws s3 sync out/ s3://${S3_BUCKET_NAME} --delete
     - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
   artifacts:
