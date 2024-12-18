@@ -13,7 +13,7 @@ function Home() {
   const [topArticle, setTopArticle] = useState({});
 
   useEffect(() => {
-    fetch("https://api.smo4.cloud:3000/articles")
+    fetch("https://api.smo4.cloud/articles")
       .then((response) => response.json())
       .then((data) => {
         setTopArticle(data.articles[0]);

@@ -13,7 +13,7 @@ function TopArticle(props) {
       return;
     }
 
-    fetch(`https://api.smo4.cloud:3000/users/canBookmark/${user.token}`)
+    fetch(`https://api.smo4.cloud/users/canBookmark/${user.token}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.result && data.canBookmark) {
