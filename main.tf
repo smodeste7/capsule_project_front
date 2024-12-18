@@ -127,21 +127,21 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   aliases = ["${var.front_subdomain}.${var.domain_name}"]
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "S3-Website-${aws_s3_bucket.frontend_bucket.id}"
 
     forwarded_values {
-      query_string = false
+      query_string = true
       cookies {
         forward = "none"
       }
     }
 
-    viewer_protocol_policy = "redirect-to-https"
+    viewer_protocol_policy = "allow-all"
     min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    default_ttl            = 0
+    max_ttl                = 0
   }
 
   price_class = "PriceClass_100"
