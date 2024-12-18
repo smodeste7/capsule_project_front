@@ -19,6 +19,8 @@ cache:
 
 build:
   stage: build
+  tags:
+    - docker
   image: node:${NODE_VERSION}
   script:
     - npm ci
@@ -30,6 +32,8 @@ build:
 
 deploy_s3_cloudfront:
   stage: deploy
+  tags:
+    - docker
   image:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
@@ -42,7 +46,7 @@ deploy_s3_cloudfront:
     - apt-get update -y
     - apt-get install -y awscli
     - aws s3 sync out/ s3://${S3_BUCKET_NAME} --delete
-    #- aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
+    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
   artifacts:
     paths:
       - tfplan
@@ -52,6 +56,8 @@ deploy_s3_cloudfront:
 
 destroy_infrastructure:
   stage: destroy
+  tags:
+    - shell
   image:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
