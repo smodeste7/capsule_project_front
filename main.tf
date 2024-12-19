@@ -172,7 +172,7 @@ resource "aws_route53_record" "frontend" {
   }
 }
 
-# Enregistrement Route53 pour l'API (api.smo4.cloud) pointant vers l'IP EC2
+# Enregistrement Route53 pour l'API (api.smo4.cloud) pointant vers l'IP EC2 - vérifier si on le garde ?
 #resource "aws_route53_record" "api" {
  # zone_id = data.aws_route53_zone.main.zone_id
   #name    = "${var.api_subdomain}.${var.domain_name}"
