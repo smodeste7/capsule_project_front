@@ -173,14 +173,14 @@ resource "aws_route53_record" "frontend" {
 }
 
 # Enregistrement Route53 pour l'API (api.smo4.cloud) pointant vers l'IP EC2
-resource "aws_route53_record" "api" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "${var.api_subdomain}.${var.domain_name}"
-  type    = "A"
+#resource "aws_route53_record" "api" {
+ # zone_id = data.aws_route53_zone.main.zone_id
+  #name    = "${var.api_subdomain}.${var.domain_name}"
+  #type    = "A"
   
-  ttl     = 300
-  records = ["13.36.222.192"]
-}
+  #ttl     = 300
+  #records = ["13.36.222.192"]
+#}
 
 # Outputs utiles
 output "s3_website_endpoint" {

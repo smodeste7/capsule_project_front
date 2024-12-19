@@ -58,7 +58,7 @@ deploy_s3_cloudfront:
 destroy_infrastructure:
   stage: destroy
   tags:
-    - shell
+    - docker
   image:
     name: hashicorp/terraform:${TERRAFORM_VERSION}
     entrypoint: [""]
